@@ -51,6 +51,7 @@ if ($modx->getOption('makeArchive',$scriptProperties,true)) {
 /* get filter by year, month, and/or day. Sanitize to prevent injection. */
 $where = $modx->getOption('where',$scriptProperties,false);
 $where = is_array($where) ? $where : $modx->fromJSON($where);
+$where = is_array($where) ? $where : array();
 $parameters = $modx->request->getParameters();
 
 $year = $modx->getOption($filterPrefix.'year',$parameters,$modx->getOption('year',$scriptProperties,''));
