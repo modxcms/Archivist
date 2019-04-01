@@ -105,13 +105,24 @@ if (!empty($tag)) {
     }
 }
 
-$grSnippet = $modx->getOption('grSnippet',$scriptProperties,'getResources');
+// First check if pdoResources snippet is installed
+$prSnippet = $modx->getOption('prSnippet',$scriptProperties,'pdoResources');
 /** @var modSnippet $snippet */
-$snippet = $modx->getObject('modSnippet', array('name' => $grSnippet));
+$snippet = $modx->getObject('modSnippet', array('name' => $prSnippet));
 if ($snippet) {
     $snippet->setCacheable(false);
     $output = $snippet->process($scriptProperties);
 } else {
-    return 'You must have getResources downloaded and installed to use this snippet.';
+    // Check for getResources as a fallback
+    $grSnippet = $modx->getOption('grSnippet',$scriptProperties,'getResources');
+    /** @var modSnippet $snippet */
+    $snippet = $modx->getObject('modSnippet', array('name' => $grSnippet));
+    if ($snippet) {
+        $snippet->setCacheable(false);
+        $output = $snippet->process($scriptProperties);
+    } else {
+        // Fail with error message.
+        return 'You must have either pdoTools or getResources downloaded and installed to use this snippet.';
+    }
 }
 return $output;
