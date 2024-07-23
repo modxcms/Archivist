@@ -68,8 +68,7 @@ $extraParams = $archivist->mergeGetParams($extraParams,$persistGetParams,$filter
 
 /* set locale for date processing */
 if ($modx->getOption('setLocale',$scriptProperties,true)) {
-    $cultureKey = $modx->getOption('cultureKey',null,'en');
-    $locale = !empty($scriptProperties['locale']) ? $scriptProperties['locale'] : $cultureKey;
+    $locale = !empty($scriptProperties['locale']) ? $scriptProperties['locale'] : $modx->getOption('locale', null, '');
     if (!empty($locale)) {
         setlocale(LC_ALL,$locale);
     }
@@ -89,21 +88,18 @@ $sqlDateFormat = '%Y';
 if ($dateEmpty) $dateFormat = '%Y';
 if ($useMonth) {
     if ($dateEmpty) $dateFormat = '%B '.$dateFormat;
-    $sqlDateFormat = '%b '.$sqlDateFormat;
+    $sqlDateFormat .= '-%m' ;
 }
 if ($useDay) {
     if ($dateEmpty) $dateFormat = '%d '.$dateFormat;
-    $sqlDateFormat = '%d '.$sqlDateFormat;
+    $sqlDateFormat .= '-%d';
 }
 /* build query */
 $c = $modx->newQuery('modResource');
-$fields = $modx->getSelectColumns('modResource','','',array('id',$sortBy));
-$c->select($fields);
 $c->select(array(
-    'FROM_UNIXTIME('.$sortBy.',"'.$sqlDateFormat.'") AS '.$modx->escape('date'),
-    'FROM_UNIXTIME('.$sortBy.',"'.$sqlDateFormat.'") AS '.$modx->escape('date'),
-    'FROM_UNIXTIME('.$sortBy.',"%D") AS '.$modx->escape('day_formatted'),
-    'COUNT('.$modx->escape('id').') AS '.$modx->escape('count'),
+    'id' => 'ANY_VALUE(' . $modx->getSelectColumns('modResource','modResource','',array('id')) . ')',
+    'date' => 'FROM_UNIXTIME(' . $modx->getSelectColumns('modResource','modResource','',array($sortBy)) . ', "' . $sqlDateFormat . '")',
+    'count' => 'COUNT(' . $modx->getSelectColumns('modResource','modResource','',array('id')) . ')',
 ));
 $c->where(array(
     'parent:IN' => $parents,
@@ -129,11 +125,12 @@ if (!empty($exclude)) {
         'id:NOT IN' => is_array($exclude) ? $exclude : explode(',',$exclude),
     ));
 }
-$c->sortby('FROM_UNIXTIME(`'.$sortBy.'`,"%Y") '.$sortDir.', FROM_UNIXTIME(`'.$sortBy.'`,"%m") '.$sortDir.', FROM_UNIXTIME(`'.$sortBy.'`,"%d") '.$sortDir,'');
-$c->groupby('FROM_UNIXTIME(`'.$sortBy.'`,"'.$sqlDateFormat.'")');
+$c->sortby('date', $sortDir);
+$c->groupby('date');
+
 /* if limiting to X records */
 if (!empty($limit)) { $c->limit($limit,$start); }
-$resources = $modx->getCollection('modResource',$c);
+$resources = $modx->getIterator('modResource',$c);
 
 /* iterate over resources */
 $output = array();
